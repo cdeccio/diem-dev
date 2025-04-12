@@ -65,7 +65,8 @@ def create_square(lat, lon, area):
     return _extract_geometry(json.loads(gdf.to_json()))
 
 def create_diem_id(row, suffix):
-    return f'{DIEM_PROTO}://{DIEM_PREFIX}.%d.{suffix}' % (int(row[0]))
+    return f'{DIEM_PROTO}:{DIEM_PREFIX}.%d.{suffix}?CLASS=IN;TYPE=TXT' % \
+            (int(row[0]))
 
 def create_claims(row, min_area, suffix):
     try:
