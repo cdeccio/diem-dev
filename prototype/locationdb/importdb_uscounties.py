@@ -21,18 +21,31 @@ def _extract_geometry(geo):
         return geo
     return mygeo
 
-def _geojson_to_postgis(geojson):
-    '''Convert a geojson geometry object to a string suitable for PostGIS.'''
-
-    if geojson['type'].lower() != 'polygon':
-        return None
-
+def _geojson_to_postgis_polygon(geojson):
     coord_sets = []
     for l in geojson['coordinates']:
         coord_set = ', '.join([f'{p1} {p2}' for (p1, p2) in l])
         coord_sets.append(coord_set)
     coord_sets_str = '),('.join(coord_sets)
     return f'POLYGON(({coord_sets_str}))'
+
+def _geojson_to_postgis_multipolygon(geojson):
+    coord_sets = []
+    for p in geojson['coordinates']:
+        for l in p:
+            coord_set = ', '.join([f'{p1} {p2}' for (p1, p2) in l])
+            coord_sets.append(coord_set)
+        coord_sets_str = '),('.join(coord_sets)
+    return f'MULTIPOLYGON((({coord_sets_str})))'
+
+def _geojson_to_postgis(geojson):
+    '''Convert a geojson geometry object to a string suitable for PostGIS.'''
+
+    if geojson['type'].lower() == 'polygon':
+        return _geojson_to_postgis_polygon(geojson)
+    elif geojson['type'].lower() == 'multipolygon':
+        return _geojson_to_postgis_multipolygon(geojson)
+    return None
 
 def create_diem_id(obj, suffix):
     return f'{DIEM_PROTO}:{DIEM_PREFIX}.%d.{suffix}?CLASS=IN;TYPE=TXT' % \
@@ -47,12 +60,12 @@ HUNDRED_ACRE_MAPPING = {
         '16001': "Roo's House", # Ada 16001
         }
 
-def create_claims(obj, suffix):
+def create_claims(obj, suffix, organization):
     claims = {
             'diem_id': create_diem_id(obj, suffix),
             'diem_asset_type': 'physical',
             'diem_asset_id': str(obj['coty_code'][0]),
-            'diem_asset_id_issuer': 'us-counties',
+            'diem_asset_id_issuer': organization,
             'diem_asset_desc': f"{obj['coty_name'][0]} County, {obj['ste_name'][0]}",
             'diem_location': _extract_geometry(obj['geo_shape'])
             }
@@ -102,7 +115,7 @@ def main():
     blob = json.loads(args.input_file.read())
     for obj in blob:
 
-        claims = create_claims(obj, args.suffix)
+        claims = create_claims(obj, args.suffix, args.organization)
         if claims is None:
             continue
 

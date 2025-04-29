@@ -68,7 +68,7 @@ def create_diem_id(row, suffix):
     return f'{DIEM_PROTO}:{DIEM_PREFIX}.%d.{suffix}?CLASS=IN;TYPE=TXT' % \
             (int(row[0]))
 
-def create_claims(row, min_area, suffix):
+def create_claims(row, min_area, suffix, organization):
     try:
         lat = float(row[8])
         lon = float(row[9])
@@ -83,7 +83,10 @@ def create_claims(row, min_area, suffix):
     claims = {
             'diem_id': create_diem_id(row, suffix),
             'diem_asset_type': 'physical',
-            'location': create_square(lat, lon, max(area, min_area))
+            'diem_asset_id': row[0],
+            'diem_asset_id_issuer': organization,
+            'diem_asset_desc': row[1],
+            'diem_location': create_square(lat, lon, max(area, min_area))
             }
     return claims
 
@@ -142,7 +145,7 @@ def main():
     headers = next(mycsv)
     for num, row in enumerate(mycsv):
 
-        claims = create_claims(row, args.min_area, args.suffix)
+        claims = create_claims(row, args.min_area, args.suffix, args.organization)
         if claims is None:
             continue
 
@@ -152,7 +155,7 @@ def main():
             args.output_file.write(claims_json + '\n')
 
         if curs is not None:
-            loc = claims['location']
+            loc = claims['diem_location']
             loc_postgis = _geojson_to_postgis(loc)
             if loc_postgis:
                 curs.execute('INSERT INTO ' + args.dbtable + ' ' + \
@@ -162,7 +165,7 @@ def main():
                              (args.organization,
                               row[0], row[1], row[5] or None,
                               row[6] or None,
-                              _geojson_to_postgis(claims['location'])))
+                              _geojson_to_postgis(claims['diem_location'])))
             else:
                 sys.stderr.write(f'Error: Problem with location for ID {row[0]}.\n')
 
