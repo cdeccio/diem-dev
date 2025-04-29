@@ -44,7 +44,7 @@ def send_update(zone, name, ttl, rdtype, contents,
     # specify to add a record with the given contents and TTL at the given name
     msg.add(name, ttl, rdtype, contents)
     # send the update
-    response = dns.query.udp(msg, server)
+    response = dns.query.tcp(msg, server)
     if response.rcode() != dns.rcode.NOERROR:
         raise UpdateError('updated failed with rcode %s' % \
                 dns.rcode.to_text(response.rcode()))
