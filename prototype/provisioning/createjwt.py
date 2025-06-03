@@ -83,7 +83,8 @@ def get_mname_for_zone(n):
         return None
     return a.rrset[0].mname.to_text()
 
-def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
+def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg,
+               insert_label=None):
     assert zone is not None or subzone_labels is not None
 
     url2 = urllib.parse.urlparse(url)
@@ -103,6 +104,14 @@ def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
     else:
         zone = dns.name.Name(name[subzone_labels:])
 
+    if insert_label:
+        if not (isinstance(insert_label, tuple) and len(insert_label) == 2):
+            raise ValueError(f'insert_label argument must be a tuple ' + \
+                    'of length 2.\n')
+        name = dns.name.Name(name[:insert_label[1]] + \
+                (insert_label[0],) + \
+                name[insert_label[1]:])
+
     if server is None:
         server = get_mname_for_zone(zone)
         if server is None:
@@ -112,8 +121,14 @@ def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
     jwt_parts = []
     jwt_rem = _escape_quote(jwt)
     while len(jwt_rem) > MAX_TXT_STRING_LEN:
-        jwt_parts.append(jwt_rem[:MAX_TXT_STRING_LEN])
-        jwt_rem = jwt_rem[MAX_TXT_STRING_LEN:]
+        max_ind = None
+        if jwt_rem[MAX_TXT_STRING_LEN - 1] == '\\' and \
+                jwt_rem[MAX_TXT_STRING_LEN - 2] != '\\':
+            max_ind = MAX_TXT_STRING_LEN - 1
+        else:
+            max_ind = MAX_TXT_STRING_LEN
+        jwt_parts.append(jwt_rem[:max_ind])
+        jwt_rem = jwt_rem[max_ind:]
     if jwt_rem:
         jwt_parts.append(jwt_rem)
 
@@ -129,6 +144,10 @@ def main():
     parser.add_argument('--update_dns', default=False,
                         action='store_const', const=True,
                         help='Upload JWT to DNS using dynamic DNS update.')
+    parser.add_argument('--human_readable', default=False,
+                        action='store_const', const=True,
+                        help='Upload human-readable JSON to to DNS, in ' + \
+                                'addition to the JWT.')
     parser.add_argument('--subzone_labels', type=int, default=None,
                         help='The number of subdomain labels that should ' + \
                                 'be stripped from a domain name to form ' + \
@@ -189,6 +208,12 @@ def main():
             sys.stderr.write('Exactly one of --zone or --subzone_labels ' + \
                     'must be used with --update_dns.\n')
             sys.exit(1)
+    else:
+        for opt in ('human_readable', 'subzone_labels', 'zone'):
+            if getattr(args, opt):
+                sys.stderr.write(f'--{opt} requires the use of ' + \
+                        '--update_dns.\n')
+                sys.exit(1)
 
     for line in args.input_file:
         line = line.strip()
@@ -205,6 +230,10 @@ def main():
         if args.update_dns:
             upload_jwt(jwt, claims['diem_id'], args.ttl, args.server,
                        args.zone, args.subzone_labels, keyring, alg)
+            if args.human_readable:
+                upload_jwt(line, claims['diem_id'], args.ttl, args.server,
+                           args.zone, args.subzone_labels, keyring, alg,
+                           insert_label=('h', 1))
 
 if __name__ == '__main__':
     main()
