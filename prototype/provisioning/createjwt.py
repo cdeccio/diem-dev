@@ -11,6 +11,8 @@ import dns.name, dns.exception, dns.resolver
 
 from dns_update import parse_tsig_key_file, send_update
 
+MAX_TXT_STRING_LEN = 255
+
 def jwt_base64decode(s):
     rem = len(s) % 4
     if rem == 0:
@@ -90,10 +92,9 @@ def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
 
     jwt_parts = []
     jwt_rem = jwt
-    while jwt_rem:
-        if len(jwt_rem) > 255:
-            jwt_parts.append(jwt_rem[:255])
-        jwt_rem = jwt_rem[255:]
+    while len(jwt_rem) > MAX_TXT_STRING_LEN:
+        jwt_parts.append(jwt_rem[:MAX_TXT_STRING_LEN])
+        jwt_rem = jwt_rem[MAX_TXT_STRING_LEN:]
     if jwt_rem:
         jwt_parts.append(jwt_rem)
 
