@@ -101,7 +101,7 @@ def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
     jwt_rdata = '"' + '" "'.join(jwt_parts) + '"'
     try:
         send_update(zone, name, ttl, pairs['TYPE'],
-                    jwt_rdata, server, keyring=keyring, alg=alg)
+                    jwt_rdata, server, keyring=keyring, alg=alg, tcp=True)
     except AssertionError as e:
         sys.stderr.write(f'Error: {str(e)}\n')
 

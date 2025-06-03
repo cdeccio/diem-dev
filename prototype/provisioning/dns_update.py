@@ -12,6 +12,8 @@ import dns.rdatatype
 import dns.tsigkeyring
 import dns.update
 
+MAX_UDP_CONTENTS = 1200
+
 TSIG_KEY_RE = re.compile(r'key\s+"([^"]+)"')
 TSIG_ALG_RE = re.compile(r'algorithm\s+([^;\s]+)')
 TSIG_SECRET_RE = re.compile(r'secret\s+"([^"]+)"')
@@ -38,13 +40,27 @@ def parse_tsig_key_file(file):
     return keyring, alg
 
 def send_update(zone, name, ttl, rdtype, contents,
-                server, keyring=None, alg=None):
+                server, keyring=None, alg=None, tcp=None):
     # create the update message
     msg = dns.update.Update(zone, keyring=keyring, keyalgorithm=alg)
     # specify to add a record with the given contents and TTL at the given name
     msg.add(name, ttl, rdtype, contents)
+
+    if tcp is None:
+        # if tcp was not specified, then use tcp if the size of contents
+        # exceeds MAX_UDP_CONTENTS
+        if len(contents) > MAX_UDP_CONTENTS:
+            tcp = True
+        else:
+            tcp = False
+
+    if tcp:
+        transport = dns.query.tcp
+    else:
+        transport = dns.query.udp
+
     # send the update
-    response = dns.query.tcp(msg, server)
+    response = transport(msg, server)
     if response.rcode() != dns.rcode.NOERROR:
         raise UpdateError('updated failed with rcode %s' % \
                 dns.rcode.to_text(response.rcode()))
