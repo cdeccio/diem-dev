@@ -168,7 +168,7 @@ def main():
         if (args.zone is not None and args.subzone_labels is not None) or \
                 (args.zone is None and args.subzone_labels is None):
             sys.stderr.write('Exactly one of --zone or --subzone_labels ' + \
-                    'must be used with --update_dns.')
+                    'must be used with --update_dns.\n')
             sys.exit(1)
 
     for line in args.input_file:
