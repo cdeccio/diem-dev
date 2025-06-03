@@ -13,6 +13,25 @@ from dns_update import parse_tsig_key_file, send_update
 
 MAX_TXT_STRING_LEN = 255
 
+def _escape_quote(s):
+    s_new = ''
+    for i in range(len(s)):
+        if s[i] != '"':
+            s_new += s[i]
+        else:
+            # go backwards until we find the first non-backslash
+            j = i - 1
+            while j >= 0 and s[j] == '\\':
+                j -= 1
+            diff = i - (j + 1)
+            if diff % 2 == 0:
+                # even number of backslashes means the quote is not already escaped
+                s_new += r'\"'
+            else:
+                # odd number of backslashes means the quote is already escaped
+                s_new += r'\\"'
+    return s_new
+
 def jwt_base64decode(s):
     rem = len(s) % 4
     if rem == 0:
@@ -91,7 +110,7 @@ def upload_jwt(jwt, url, ttl, server, zone, subzone_labels, keyring, alg):
     server = get_addr_for_name(server)
 
     jwt_parts = []
-    jwt_rem = jwt
+    jwt_rem = _escape_quote(jwt)
     while len(jwt_rem) > MAX_TXT_STRING_LEN:
         jwt_parts.append(jwt_rem[:MAX_TXT_STRING_LEN])
         jwt_rem = jwt_rem[MAX_TXT_STRING_LEN:]
