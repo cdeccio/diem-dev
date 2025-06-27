@@ -131,11 +131,13 @@ def main():
 
         if curs is not None:
             loc = claims['diem_location']
+            diem_id = claims['diem_id']
             loc_postgis = _geojson_to_postgis(loc)
             if loc_postgis:
                 curs.execute('INSERT INTO ' + args.dbtable + ' ' + \
-                        '(organization, id, desc_brief, location) VALUES ' + \
-                             '(%s, %s, %s, %s)', (args.organization,
+                        '(organization, diem_id, id, desc_brief, location) ' + \
+                        'VALUES (%s, %s, %s, %s, %s)',
+                             (args.organization, diem_id,
                               int(obj['coty_code'][0]), claims['diem_asset_desc'],
                               _geojson_to_postgis(claims['diem_location'])))
             else:
