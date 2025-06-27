@@ -13,6 +13,15 @@ from dns_update import parse_tsig_key_file, send_update
 
 MAX_TXT_STRING_LEN = 255
 
+def _odd_backslashes(s, i):
+    if i >= len(s):
+        raise ValueError('i must be less than len(s)')
+    j = i
+    # go backwards until we find the first non-backslash
+    while j >= 0 and s[j] == '\\':
+        j -= 1
+    return not ((i - j) % 2 == 0)
+
 def _escape_quote(s):
     s_new = ''
     for i in range(len(s)):
@@ -20,16 +29,16 @@ def _escape_quote(s):
             s_new += s[i]
         else:
             # go backwards until we find the first non-backslash
-            j = i - 1
-            while j >= 0 and s[j] == '\\':
-                j -= 1
-            diff = i - (j + 1)
-            if diff % 2 == 0:
-                # even number of backslashes means the quote is not already escaped
-                s_new += r'\"'
-            else:
-                # odd number of backslashes means the quote is already escaped
+            if _odd_backslashes(s, i - 1):
+                # odd number of backslashes means the quote is already escaped,
+                # so we add an escaped backslash (i.e., two backslashes) and a
+                # quote: r'\"' => r'\\\"'
                 s_new += r'\\"'
+            else:
+                # even number of backslashes means the quote is not already
+                # escaped, so we add an escaped quote (i.e., a backslash and a
+                # quote): r'"' => r'\"'
+                s_new += r'\"'
     return s_new
 
 def jwt_base64decode(s):
