@@ -10,5 +10,5 @@ DBTABLE=protected_area
 createdb $DBNAME || exit 1;
 psql -c 'CREATE EXTENSION postgis' $DBNAME || exit 1;
 psql -c 'CREATE TABLE $DBTABLE (organization VARCHAR(512), id INT,
-         desc_brief VARCHAR(1024), date_designated DATE, date_updated DATE,
-         location GEOMETRY);' $DBNAME
+         desc_brief VARCHAR(1024), diem_id VARCHAR(512),
+         date_designated DATE, date_updated DATE, location GEOMETRY);' $DBNAME
