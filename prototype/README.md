@@ -40,7 +40,7 @@
      dig _diem.h.813.ramsar.examples.prototype.digitalemblem.org txt
      ```
 
-## (International Committee of the Red Cross)[https://www.icrc.org/]
+## [International Committee of the Red Cross](https://www.icrc.org/)
    - Data: [RIPE Whois](https://apps.db.ripe.net/db-web-ui/query?bflag=false&dflag=false&rflag=true&searchtext=80.94.146.0&source=RIPE)
    - Settings:
      - Name template (IP): `_diem.<asn>.asn.swisscom.examples.prototype.digitalemblem.org`
